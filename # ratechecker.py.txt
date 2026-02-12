@@ -1,0 +1,50 @@
+# rate_limiter.py
+
+import time
+from collections import defaultdict, deque
+
+RATE_LIMIT = 5      # requests
+WINDOW_SIZE = 10    # seconds
+
+class RateLimiter:
+    def __init__(self):
+        self.requests = defaultdict(deque)
+        self.allowed = 0
+        self.blocked = 0
+
+    def allow_request(self, user_id):
+        now = time.time()
+        window = self.requests[user_id]
+
+        while window and now - window[0] > WINDOW_SIZE:
+            window.popleft()
+
+        if len(window) < RATE_LIMIT:
+            window.append(now)
+            self.allowed += 1
+            return True
+        else:
+            self.blocked += 1
+            return False
+
+    def report(self):
+        print("\n--- RATE LIMIT REPORT ---")
+        print(f"Allowed requests: {self.allowed}")
+        print(f"Blocked requests: {self.blocked}")
+        print("-------------------------\n")
+
+
+if __name__ == "__main__":
+    rl = RateLimiter()
+
+    test_users = ["userA", "userB"]
+
+    for i in range(15):
+        user = test_users[i % 2]
+        if rl.allow_request(user):
+            print(f"[OK] Request from {user}")
+        else:
+            print(f"[BLOCKED] Request from {user}")
+        time.sleep(1)
+
+    rl.report()
